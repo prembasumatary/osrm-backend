@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2014, Project OSRM, Dennis Luxen, others
+Copyright (c) 2014, Project OSRM contributors
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -27,7 +27,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "import_edge.hpp"
 
-#include <boost/assert.hpp>
+#include "travel_mode.hpp"
+#include "../typedefs.h"
 
 bool NodeBasedEdge::operator<(const NodeBasedEdge &other) const
 {
@@ -46,6 +47,13 @@ bool NodeBasedEdge::operator<(const NodeBasedEdge &other) const
     return source < other.source;
 }
 
+NodeBasedEdge::NodeBasedEdge()
+    : source(SPECIAL_NODEID), target(SPECIAL_NODEID), name_id(0), weight(0), forward(false),
+      backward(false), roundabout(false), in_tiny_cc(false),
+      access_restricted(false), is_split(false), travel_mode(false)
+{
+}
+
 NodeBasedEdge::NodeBasedEdge(NodeID source,
                              NodeID target,
                              NodeID name_id,
@@ -57,8 +65,8 @@ NodeBasedEdge::NodeBasedEdge(NodeID source,
                              bool access_restricted,
                              TravelMode travel_mode,
                              bool is_split)
-    : source(source), target(target), name_id(name_id), weight(weight),
-      forward(forward), backward(backward), roundabout(roundabout), in_tiny_cc(in_tiny_cc),
+    : source(source), target(target), name_id(name_id), weight(weight), forward(forward),
+      backward(backward), roundabout(roundabout), in_tiny_cc(in_tiny_cc),
       access_restricted(access_restricted), is_split(is_split), travel_mode(travel_mode)
 {
 }

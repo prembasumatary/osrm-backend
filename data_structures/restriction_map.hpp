@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2014, Project OSRM, Dennis Luxen, others
+Copyright (c) 2015, Project OSRM contributors
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -28,14 +28,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef RESTRICTION_MAP_HPP
 #define RESTRICTION_MAP_HPP
 
-#include <memory>
-
 #include "restriction.hpp"
-#include "../Util/std_hash.hpp"
+#include "../util/std_hash.hpp"
 #include "../typedefs.h"
 
 #include <boost/assert.hpp>
 
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -45,9 +44,7 @@ struct RestrictionSource
     NodeID start_node;
     NodeID via_node;
 
-    RestrictionSource(NodeID start, NodeID via) : start_node(start), via_node(via)
-    {
-    }
+    RestrictionSource(NodeID start, NodeID via) : start_node(start), via_node(via) {}
 
     friend inline bool operator==(const RestrictionSource &lhs, const RestrictionSource &rhs)
     {
@@ -60,9 +57,7 @@ struct RestrictionTarget
     NodeID target_node;
     bool is_only;
 
-    explicit RestrictionTarget(NodeID target, bool only) : target_node(target), is_only(only)
-    {
-    }
+    explicit RestrictionTarget(NodeID target, bool only) : target_node(target), is_only(only) {}
 
     friend inline bool operator==(const RestrictionTarget &lhs, const RestrictionTarget &rhs)
     {
@@ -96,14 +91,15 @@ template <> struct hash<RestrictionTarget>
 class RestrictionMap
 {
   public:
+    RestrictionMap() : m_count(0) {};
     RestrictionMap(const std::vector<TurnRestriction> &restriction_list);
 
     // Replace end v with w in each turn restriction containing u as via node
-    template<class GraphT>
+    template <class GraphT>
     void FixupArrivingTurnRestriction(const NodeID node_u,
                                       const NodeID node_v,
                                       const NodeID node_w,
-                                      const std::shared_ptr<GraphT> &graph)
+                                      const GraphT &graph)
     {
         BOOST_ASSERT(node_u != SPECIAL_NODEID);
         BOOST_ASSERT(node_v != SPECIAL_NODEID);
@@ -117,9 +113,9 @@ class RestrictionMap
         // find all potential start edges. It is more efficent to get a (small) list
         // of potential start edges than iterating over all buckets
         std::vector<NodeID> predecessors;
-        for (const EdgeID current_edge_id : graph->GetAdjacentEdgeRange(node_u))
+        for (const EdgeID current_edge_id : graph.GetAdjacentEdgeRange(node_u))
         {
-            const NodeID target = graph->GetTarget(current_edge_id);
+            const NodeID target = graph.GetTarget(current_edge_id);
             if (node_v != target)
             {
                 predecessors.push_back(target);
@@ -136,6 +132,7 @@ class RestrictionMap
 
             const unsigned index = restriction_iterator->second;
             auto &bucket = m_restriction_bucket_list.at(index);
+
             for (RestrictionTarget &restriction_target : bucket)
             {
                 if (node_v == restriction_target.target_node)
@@ -148,24 +145,18 @@ class RestrictionMap
 
     bool IsViaNode(const NodeID node) const;
 
-
     // Replaces start edge (v, w) with (u, w). Only start node changes.
-    void FixupStartingTurnRestriction(const NodeID node_u,
-                                      const NodeID node_v,
-                                      const NodeID node_w);
+    void
+    FixupStartingTurnRestriction(const NodeID node_u, const NodeID node_v, const NodeID node_w);
 
     // Check if edge (u, v) is the start of any turn restriction.
     // If so returns id of first target node.
     NodeID CheckForEmanatingIsOnlyTurn(const NodeID node_u, const NodeID node_v) const;
     // Checks if turn <u,v,w> is actually a turn restriction.
-    bool CheckIfTurnIsRestricted(const NodeID node_u,
-                                 const NodeID node_v,
-                                 const NodeID node_w) const;
+    bool
+    CheckIfTurnIsRestricted(const NodeID node_u, const NodeID node_v, const NodeID node_w) const;
 
-    std::size_t size()
-    {
-        return m_count;
-    }
+    std::size_t size() { return m_count; }
 
   private:
     // check of node is the start of any restriction
@@ -182,4 +173,4 @@ class RestrictionMap
     std::unordered_set<NodeID> m_no_turn_via_node_set;
 };
 
-#endif //RESTRICTION_MAP_HPP
+#endif // RESTRICTION_MAP_HPP

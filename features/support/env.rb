@@ -22,10 +22,10 @@ SHUTDOWN_TIMEOUT = 10
 DEFAULT_LOAD_METHOD = 'datastore'
 OSRM_ROUTED_LOG_FILE = 'osrm-routed.log'
 
-if ENV['OS']==/Windows.*/ then
-  TERMSIGNAL='TERM'
-else
+if ENV['OS']=~/Windows.*/ then
   TERMSIGNAL=9
+else
+  TERMSIGNAL='TERM'
 end
 
 
@@ -64,6 +64,19 @@ unless File.exists? TEST_FOLDER
   raise "*** Test folder #{TEST_FOLDER} doesn't exist."
 end
 
+def verify_osrm_is_not_running
+  if OSRMLoader::OSRMBaseLoader.new.osrm_up?
+    raise "*** osrm-routed is already running."
+  end
+end
+
+def verify_existance_of_binaries
+  ["osrm-extract", "osrm-prepare", "osrm-routed"].each do |bin|  
+    unless File.exists? "#{BIN_PATH}/#{bin}#{EXE}"
+      raise "*** #{BIN_PATH}/#{bin}#{EXE} is missing. Build failed?"
+    end
+  end
+end
 
 if ENV['OS']=~/Windows.*/ then
    EXE='.exe'
@@ -74,10 +87,9 @@ else
 end
 
 AfterConfiguration do |config|
-  if OSRMLoader::OSRMBaseLoader.new.osrm_up?
-    raise "*** osrm-routed is already running."
-  end
   clear_log_files
+  verify_osrm_is_not_running
+  verify_existance_of_binaries
 end
 
 at_exit do

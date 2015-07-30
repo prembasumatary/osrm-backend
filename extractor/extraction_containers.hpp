@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2014, Project OSRM, Dennis Luxen, others
+Copyright (c) 2015, Project OSRM contributors
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -32,24 +32,40 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "first_and_last_segment_of_way.hpp"
 #include "../data_structures/external_memory_node.hpp"
 #include "../data_structures/restriction.hpp"
-#include "../Util/FingerPrint.h"
 
 #include <stxxl/vector>
+#include <unordered_map>
 
+/**
+ * Uses external memory containers from stxxl to store all the data that
+ * is collected by the extractor callbacks.
+ *
+ * The data is the filtered, aggregated and finally written to disk.
+ */
 class ExtractionContainers
 {
 #ifndef _MSC_VER
-    constexpr static unsigned stxxl_memory = ((sizeof(std::size_t) == 4) ? std::numeric_limits<int>::max() : std::numeric_limits<unsigned>::max());
+    constexpr static unsigned stxxl_memory =
+        ((sizeof(std::size_t) == 4) ? std::numeric_limits<int>::max()
+                                    : std::numeric_limits<unsigned>::max());
 #else
     const static unsigned stxxl_memory = ((sizeof(std::size_t) == 4) ? INT_MAX : UINT_MAX);
 #endif
+    void PrepareNodes();
+    void PrepareRestrictions();
+    void PrepareEdges();
+
+    void WriteNodes(std::ofstream& file_out_stream) const;
+    void WriteRestrictions(const std::string& restrictions_file_name) const;
+    void WriteEdges(std::ofstream& file_out_stream) const;
+    void WriteNames(const std::string& names_file_name) const;
   public:
-    using  STXXLNodeIDVector = stxxl::vector<NodeID>;
-    using  STXXLNodeVector = stxxl::vector<ExternalMemoryNode>;
-    using  STXXLEdgeVector = stxxl::vector<InternalExtractorEdge>;
-    using  STXXLStringVector = stxxl::vector<std::string>;
-    using  STXXLRestrictionsVector = stxxl::vector<InputRestrictionContainer>;
-    using  STXXLWayIDStartEndVector = stxxl::vector<FirstAndLastSegmentOfWay>;
+    using STXXLNodeIDVector = stxxl::vector<NodeID>;
+    using STXXLNodeVector = stxxl::vector<ExternalMemoryNode>;
+    using STXXLEdgeVector = stxxl::vector<InternalExtractorEdge>;
+    using STXXLStringVector = stxxl::vector<std::string>;
+    using STXXLRestrictionsVector = stxxl::vector<InputRestrictionContainer>;
+    using STXXLWayIDStartEndVector = stxxl::vector<FirstAndLastSegmentOfWay>;
 
     STXXLNodeIDVector used_node_id_list;
     STXXLNodeVector all_nodes_list;
@@ -57,14 +73,15 @@ class ExtractionContainers
     STXXLStringVector name_list;
     STXXLRestrictionsVector restrictions_list;
     STXXLWayIDStartEndVector way_start_end_id_list;
-    const FingerPrint fingerprint;
+    std::unordered_map<NodeID, NodeID> external_to_internal_node_id_map;
 
     ExtractionContainers();
 
     ~ExtractionContainers();
 
     void PrepareData(const std::string &output_file_name,
-                     const std::string &restrictions_file_name);
+                     const std::string &restrictions_file_name,
+                     const std::string &names_file_name);
 };
 
 #endif /* EXTRACTION_CONTAINERS_HPP */
